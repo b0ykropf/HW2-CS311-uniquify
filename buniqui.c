@@ -40,6 +40,8 @@ int main(int argc,char *argv[]){
     int aim = 0;
     int length;
     int status;
+int test0;
+int test1;
 
     int** pipe_farm = (int**) malloc(sizeof(int*) * (kid_count * 2));
 
@@ -57,6 +59,9 @@ int main(int argc,char *argv[]){
         else{
         printf("%s %d \n", "Pipe plumbed: ", i);
         }
+test0 = pipe_farm[i][0];
+test1 = pipe_farm[i][1];
+printf("%s %d %d \n","Pipe_farm[i] [0] [1] ",test0,test1);
     }
     for(int i = 0; i < kid_count; i++){
         if((pipe_point[i] = fdopen(pipe_farm[i][1],"w")) == NULL ) { //pointer to write to ith sort pipe
@@ -74,7 +79,7 @@ int main(int argc,char *argv[]){
         printf("%s %d \n", "Pointer Pointed: ", i);
         }
     }
-    
+printf("Going into Switch \n");  
     for( int i = 0; i <= kid_count; i++ ) {//spawns argv[1]+1 kids, +1 is suppressor
        
         switch( ( kid_id[i] = fork() ) ) { //Spawn Children (Pray that they do not zombify)
@@ -108,7 +113,9 @@ int main(int argc,char *argv[]){
                     }// end plugging write ends
 
 //SUPPRESSOR CODE GOES HERE
-
+                free(token);
+                free(pipe_point);
+                free(pipe_farm);
 
                     _exit(1);
                    // break;
@@ -132,7 +139,7 @@ int main(int argc,char *argv[]){
                             }
                         }
                     }//end plugging write ends and uneeded pipes
-
+printf("Checkpoint 1 \n");
                     for( int j = kid_count; j < (2 * kid_count); j++){ //plug read ends
                         if( close(pipe_farm[j][0]) != 0) {
                             err_exit("ERROR:Problem plugging read end of sup-pipe");
@@ -149,11 +156,20 @@ int main(int argc,char *argv[]){
                             }
                         }    
                     }// end plugging read ends and uneeded pipes
-
-                    dup2(pipe_farm[kid_count + i][1], 1);// makes sup pipe stdout
-                    dup2(pipe_farm[i][0], 0); // makes in pipe stdin
-                    execl("~/usr/bin/sort", "sort", NULL); // make child into sort
+test0 = pipe_farm[i][0];
+test1 = pipe_farm[i][1];
+printf("%s %d %d \n","Pipe_farm[i] [0] [1] ",test0,test1);
+printf("Checkpoint 2 \n");
+                    dup2(test0, 0);// makes sup pipe stdout
+                    dup2(test1, 1); // makes in pipe stdin
+printf("Checkpoint 3 \n");
+                    close(pipe_farm[i][0]);
+                    close(pipe_farm[i][1]);
+                    execl("/usr/bin/sort", "sort", NULL); // make child into sort
                     printf("%s %d \n", "exec done ", i);
+                free(token);
+                free(pipe_point);
+                free(pipe_farm);
                     _exit(1);
                 //end sorter code
                     break;
@@ -212,15 +228,14 @@ printf("%s\n",token);
                     free(pipe_farm[i]);
                     printf("%s %d \n","Parent free pipe: ", i);
                 }
+                free(token);
+                free(pipe_point);
+                free(pipe_farm);
 
                 while (waitpid(-1,&status,WNOHANG) > 0){
                     printf("Child exited");
                 }
                 
-                free(token);
-                free(pipe_point);
-                free(pipe_farm);
-
 
                 exit(1);
 
